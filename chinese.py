@@ -4,6 +4,7 @@ import io
 import tkinter
 from tkinter import *
 
+FONT_SIZE = 160
 
 class Character:
     character: str
@@ -59,13 +60,12 @@ def _add_to_dict(d: Dict, c: Character) -> None:
             d[c.pinyin].append(c)
 
 
-def test(char_file: str, word_file: str):
+def test(char_file: str, word_file: str, char_label: StringVar):
     run = True
     with io.open(char_file,'r', encoding='utf-8') as cf, io.open(word_file, 'r', encoding='utf-8') as wf:
         chars = cf.readlines()[0].split()
         words = wf.readlines()[0].split(",")
         start = 0
-
         n = len(chars)
         ran_char = random_list(start, n)
         ran_word = random_list(start, n)
@@ -75,6 +75,7 @@ def test(char_file: str, word_file: str):
             rand = 0
             if rand:
                 # random character
+                char_label.set(chars[ran_char[index]])
                 print(chars[ran_char[index]])
                 i = input()
                 print(words[ran_char[index]])
@@ -86,7 +87,7 @@ def test(char_file: str, word_file: str):
             index += 1
 
 
-def review_individual(char: Dict):
+def review_individual(char: Dict, char_label: StringVar):
     run = True
     chars = []
     for x in char:
@@ -100,8 +101,9 @@ def review_individual(char: Dict):
         rand = 1
         if rand:
             # random character
+            char_label.set(chars[ran_char[index]].character)
             print(chars[ran_char[index]].character)
-            i = input()
+            # i = input()
             print(chars[ran_char[index]].pinyin)
 
         else:
@@ -119,15 +121,33 @@ def random_list(start: int, end: int) -> list:
     random.shuffle(l)
     return l
 
-# def run_gui():
-#     print('r')
-#     root = tkinter.Tk()
-#     next = Button(root, text = "hello")
-#     next.pack()
-#     root.mainloop()
+
+def get_chars(char: Dict):
+    chars = []
+    for x in char:
+        for y in char[x]:
+            chars.append(y)
+    return chars
+
+
+def gui_individual(chars: List[Character]):
+    root = tkinter.Tk()
+    root.geometry(str(int(1.5*FONT_SIZE))+'x'+str(int(1.5*FONT_SIZE)))
+    i = tkinter.IntVar(value = 0)
+    ran_char = random_list(0, len(chars))
+    text = tkinter.StringVar(value="")
+    char_label = Label(root,textvariable=text, font = ("KaiTi", FONT_SIZE))
+    next = Button(root, text = "next",
+                  command = lambda:[text.set(chars[ran_char[i.get()]].character),
+                                    print(chars[ran_char[i.get()]].character),
+                                    print(chars[ran_char[i.get()]].pinyin),
+                                    i.set(i.get() + 1)])
+    char_label.pack()
+    next.pack()
+    root.mainloop()
 
 
 if __name__ == '__main__':
-    # run_gui()
-    review_individual(open_file('characters.txt', 'words.txt',0))
-    # test('characters.txt', 'words.txt')
+    gui_individual(get_chars(open_file('characters.txt', 'words.txt',0)))
+    # test('characters.txt', 'words.txt', text)
+
