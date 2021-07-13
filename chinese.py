@@ -1,19 +1,25 @@
+from tkinter import messagebox
 from typing import List, Dict, Tuple
 from tkinter import *
 import random
 import tkinter
 import io
+import json
 
 FONT_SIZE = 160
-
+FILE = "data.json"
 
 class Character:
     _character: str
     _pinyin: str
+    count: int
+    incorrect: int
 
     def __init__(self, char: str, pinyin: str) -> None:
         self.character = char
         self.pinyin = pinyin
+        self.count = 0
+        self.incorrect = 0
 
     def __eq__(self, other):
         if (self.character == other.character and
@@ -27,6 +33,13 @@ class Character:
     def get_str(self):
         return self.pinyin
 
+    def wrong(self):
+        self.incorrect += 1
+        self.count += 1
+
+    def correct(self):
+        self.count += 1
+
 
 class Word:
     characters: List[Character]
@@ -36,6 +49,12 @@ class Word:
 
     def add_character(self, character: Character):
         self.characters.append(character)
+
+    def __repr__(self):
+        s = ""
+        for x in self.characters:
+            s += x.get_str() + " "
+        return s[:-1]
 
     def get_chars(self):
         s = ""
@@ -49,10 +68,43 @@ class Word:
             s += x.get_str() + " "
         return s[:-1]
 
+    def wrong(self):
+        for x in self.characters:
+            x.wrong()
+
+    def correct(self):
+        for x in self.characters:
+            x.correct()
+
+
+def load_data(file_name: str) -> Dict[str, List[Character]]:
+    return {}
+
+
+def close(root: Tk, chars: List, file_name: str,):
+
+    with open(file_name, "w") as outfile:
+        for x in chars:
+            if type(x) == Word:
+                for y in x.characters:
+                    c = {"character": y.get_chars(),
+                         "pinyin": y.get_str(),
+                         "incorrect": y.incorrect,
+                         "count": y.count}
+                    json.dump(c, outfile)
+            else:
+                c = {"character": x.get_chars(),
+                     "pinyin": x.get_str(),
+                     "incorrect": x.incorrect,
+                     "count": x.count}
+                json.dump(c, outfile)
+    print("exit")
+    root.destroy()
+
 
 def open_file(char_file: str, word_file: str, start: int, end: int) -> \
         Tuple[Dict[str, List[Character]], List[Word]]:
-    char_d = {}
+    char_d = load_data(FILE)
     word_l = []
     with io.open(char_file,'r', encoding='utf-8') as cf, io.open(word_file, 'r', encoding='utf-8') as wf:
         chars = cf.readlines()[0].split()
@@ -87,7 +139,7 @@ def random_list(start: int, end: int) -> List[int]:
     rand_l = []
     for x in range(start, end):
         rand_l.append(x)
-    random.shuffle(rand_l)
+    # random.shuffle(rand_l)
     return rand_l
 
 
@@ -135,31 +187,47 @@ def review_words(chars: List) -> None:
     update_text(c_text, p_text, show_c, show_p, chars[rand_l[index.get()]])
     char_label = Label(root,textvariable=c_text, font=("KaiTi", FONT_SIZE))
     pinyin_label = Label(root,textvariable=p_text, font=("Calibri", int(FONT_SIZE/4)))
-    back_b = Button(button_frame,text='back', command=lambda:[
+    back_b = Button(button_frame,text='Back', command=lambda:[
         next(index, -1, len(chars)-1),
         update_text(c_text, p_text, show_c, show_p, chars[rand_l[index.get()]])
     ])
-    next_b = Button(button_frame,text='next', command=lambda:[
+    next_b = Button(button_frame,text='Next', command=lambda:[
         next(index, 1, len(chars)-1),
         update_text(c_text, p_text, show_c, show_p, chars[rand_l[index.get()]]),
     ])
-    show_char = Checkbutton(button_frame, text='show characters', variable=show_c,
-            command=lambda:[update_text(c_text, p_text, show_c, show_p, chars[rand_l[index.get()]])])
-    show_str = Checkbutton(button_frame, text='show pinyin', variable=show_p,
-            command=lambda:[update_text(c_text, p_text, show_c, show_p, chars[rand_l[index.get()]])])
+    incorrect_b = Button(button_frame,text='Incorrect', command=lambda:[
+        chars[rand_l[index.get()]].wrong(),
+        next(index, -1, len(chars)-1),
+        update_text(c_text, p_text, show_c, show_p, chars[rand_l[index.get()]])
+    ])
+    correct_b = Button(button_frame,text='Correct', command=lambda:[
+        chars[rand_l[index.get()]].correct(),
+        next(index, -1, len(chars)-1),
+        update_text(c_text, p_text, show_c, show_p, chars[rand_l[index.get()]])
+    ])
+    exit_b = Button(button_frame,text='Exit', command=lambda:[
+        close(root, chars, FILE)])
+    show_char = Checkbutton(button_frame, text='Show Characters', variable=show_c,
+            command=lambda:[update_text(c_text, p_text, show_c, show_p,
+                                        chars[rand_l[index.get()]])])
+    show_str = Checkbutton(button_frame, text='Show PinYin', variable=show_p,
+            command=lambda:[update_text(c_text, p_text, show_c, show_p,
+                                        chars[rand_l[index.get()]])])
     char_label.pack()
     pinyin_label.pack()
     back_b.pack(side=LEFT)
     next_b.pack(side=LEFT)
+    incorrect_b.pack(side=LEFT)
+    correct_b.pack(side=LEFT)
     show_char.pack(side=LEFT)
     show_str.pack(side=LEFT)
+    exit_b.pack(side=LEFT)
     button_frame.pack(side=BOTTOM)
     root.mainloop()
 
 
-
-
 if __name__ == '__main__':
-    c, w = open_file('characters.txt', 'words.txt',200, 210)
+    c, w = open_file('characters.txt', 'words.txt',0, 250)
     review_words(w)
+    # review_words(get_chars(c))
 
